@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Secret Admirer 💖</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: pink;
+    overflow: hidden;
+    text-align: center;
+}
+
+#corner {
+    position: fixed;
+    top: 10px;
+    right: 15px;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+#container {
+    padding-top: 80px;
+}
+
+button {
+    font-size: 18px;
+    padding: 10px 20px;
+    margin: 10px;
+    cursor: pointer;
+}
+
+#hearts {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 24px;
+}
+
+.bounce {
+    position: fixed;
+    width: 120px;
+    pointer-events: none;
+}
+
+/* Heartbeat animation */
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.heartbeat {
+    animation: heartbeat 1s infinite;
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.fadeIn {
+    animation: fadeIn 1s ease-in;
+}
+</style>
+</head>
+
+<body>
+
+<div id="corner">from secret admirer</div>
+<div id="hearts"></div>
+<div id="container"></div>
+
+<audio id="music" src="Hello Kitty.mp3" loop autoplay></audio>
+<audio id="sadSound" src="sad.mp3"></audio>
+<audio id="newSong" src="yebit.mp3"></audio>
+
+<script>
+let slide = 0;
+let lives = 5;
+let movingImages = [];
+let firstImageSrc = ''; // To track the first image
+
+const imagePool = [
+    "received_2035195160604018.jpeg", // Correct first image
+    "img2.jpeg",
+    "img3.png",
+    "img4.png",
+    "img5.png",
+    "img6.jpg",
+    "img7.jpeg",
+    "img8.jpg",
+    "img9.jpeg",
+    "img17.png",
+    "img11.jpeg",
+    "img12.jpeg",
+    "img13.png",
+    "img14.png",
+    "img15.png",
+    "img16.webp",
+    "img3.png",
+    "img4.png"
+];
+
+/* ---------------- SLIDES ---------------- */
+const slides = [
+    { text: "ur so cute!", start: true },
+
+    {
+        text: "Self-evaluation quiz 💕<br>Are you cute?",
+        good: "im so cute!",
+        bad: "im so ugly!"
+    },
+    {
+        text: "Are you smart?",
+        good: "im so smart!",
+        bad: "im so stupid!"
+    },
+    {
+        text: "Are you caring?",
+        good: "im so caring!",
+        bad: "im so hateful!"
+    },
+    {
+        text: "Are you ethereal?",
+        good: "im ethereal!",
+        bad: "im mangy!"
+    },
+
+    /* -------- HARDER SECTION INTRO -------- */
+    {
+        text: "okay 😈<br>now for the harder questions!",
+        info: true
+    },
+
+    {
+        text: "Who is Hello Kitty’s best friend?",
+        good: "me!",
+        bad: "cinnamoroll!"
+    },
+    {
+        text: "Which show has a higher guarantee of enjoyment?",
+        good: "barbie life in the dreamhouse",
+        bad: "totally spies"
+    },
+    {
+        text: "Who do you wanna meet?",
+        good: "sana!",
+        bad: "taylor swift"
+    },
+    {
+        text: "What is Damian wearing today?",
+        good: "blue sweater",
+        bad: "red sweater"
+    },
+    {
+        text: "What are you wearing today?",
+        good: "something pink!",
+        bad: "something not pink"
+    },
+    {
+        text: "Are you happy in your current relationship?",
+        good: "yes",
+        bad: "no :("
+    },
+    {
+        text: "Are you willing to look for another man/woman?",
+        good: "no",
+        bad: "yes :("
+    },
+    {
+        text: "Do you love your boyfriend?",
+        good: "yes",
+        bad: "no :("
+    },
+    {
+        text: "Your boyfriend is so cool!",
+        bad: "cap",
+        good: "no cap he lit and fire and gas and android > iphone midkey ong anticap! gg gang lmao. wat?"
+    },
+    {
+        text: "How good is your memory?",
+        good: "perfect!",
+        bad: "uhhhh"
+    },
+    {
+        text: "What did you receive for your third valentines?",
+        good: "ring!",
+        bad: "teddy bear!"
+    },
+    {
+        text: "Who is your first son?",
+        good: "Ban!",
+        bad: "Bandit!"
+    },
+    {
+        text: "What is the name of the song Damian wrote for you?",
+        good: "anyway (the truth is)",
+        bad: "anyhow (the truth now here is lil’ lady)"
+    },
+    {
+        text: "You ate ants sometimes as a child!",
+        good: "only the one time",
+        bad: "always!"
+    },
+
+
+    /* -------- CLICK FIRST IMAGE SLIDE -------- */
+    {
+        text: "Click the FIRST picture that showed up in this quiz 👀",
+        correctAnswers: ["received_2035195160604018.jpeg"],  // Multiple correct answers
+        wrongAnswers: ["img3.png", "img4.png", "img5.png", "img2.jpeg"],  // Multiple wrong answers
+        clickImage: true,
+        bad: "It's not here!", // First wrong choice
+        good: "Press if you wanna skip (or give up/show weakness)"  // Second wrong choice
+    },
+
+    {
+        text: "The key to the last question is the first response of this quiz.<br>Type it below:",
+        textbox: true
+    },
+
+    {
+        text: "Final question 💘<br>Will you be my valentine?",
+        valentine: true
+    }
+];
+
+/* ---------------- HEARTS ---------------- */
+function updateHearts() {
+    document.getElementById("hearts").innerText = "❤️".repeat(lives);
+}
+
+/* ---------------- DVD BOUNCE ---------------- */
+function createBouncingImage(src, clickable = false) {
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "bounce";
+
+    let x = Math.random() * (window.innerWidth - 120);
+    let y = Math.random() * (window.innerHeight - 120);
+    let dx = (Math.random() * 2 + 1) * (Math.random() < 0.5 ? -1 : 1);
+    let dy = (Math.random() * 2 + 1) * (Math.random() < 0.5 ? -1 : 1);
+
+    img.style.left = x + "px";
+    img.style.top = y + "px";
+
+    // Track the first image (This part will work fine)
+    if (!firstImageSrc) {
+        firstImageSrc = src;
+    }
+
+    if (clickable) {
+        img.style.pointerEvents = "auto";
+        img.style.cursor = "pointer";
+
+        img.onclick = () => {
+            const s = slides[slide]; // Get current slide data
+
+            // Check if the clicked image is in the correctAnswers array
+            if (s.correctAnswers.includes(src)) {
+                slide++;  // Move to the next slide
+                showSlide();
+            } else if (s.wrongAnswers.includes(src)) {
+                wrongAnswer();  // Lose a heart for wrong answer
+            }
+        };
+    }
+
+    document.body.appendChild(img);
+    movingImages.push({ img, x, y, dx, dy });
+}
+
+function moveImages() {
+    movingImages.forEach(o => {
+        o.x += o.dx;
+        o.y += o.dy;
+        if (o.x <= 0 || o.x >= window.innerWidth - 120) o.dx *= -1;
+        if (o.y <= 0 || o.y >= window.innerHeight - 120) o.dy *= -1;
+        o.img.style.left = o.x + "px";
+        o.img.style.top = o.y + "px";
+    });
+    requestAnimationFrame(moveImages);
+}
+moveImages();
+
+function clearImages() {
+    document.querySelectorAll(".bounce").forEach(i => i.remove());
+    movingImages = [];
+}
+
+function spawnImages(count, clickable = false) {
+    clearImages();
+    for (let i = 0; i < count; i++) {
+        createBouncingImage(imagePool[i % imagePool.length], clickable);
+    }
+}
+
+function normalize(s) {
+    return s.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+/* ---------------- SLIDE LOGIC ---------------- */
+function showSlide() {
+    const c = document.getElementById("container");
+    c.innerHTML = "";
+    updateHearts();
+
+    const s = slides[slide];
+
+    // Freeze the images on this specific slide
+    if (!s.start && !s.valentine && !s.info && !s.textbox && !s.clickImage) {
+        spawnImages(slide); // This continues the bouncing for other slides
+    } else if (s.clickImage) {
+        // This is the "Click FIRST picture" slide - freeze the images here
+        spawnImages(5, true); // Show 5 images, only the first is clickable
+    } else {
+        clearImages();
+    }
+
+    const h = document.createElement("h1");
+    h.innerHTML = s.text;
+    c.appendChild(h);
+
+    if (s.start) {
+        const b = document.createElement("button");
+        b.innerText = "Enter the self evaluation quiz!";
+        b.onclick = () => {
+            document.getElementById("music").play();
+            slide++;
+            showSlide();
+        };
+        c.appendChild(b);
+        return;
+    }
+
+    if (s.info) {
+        const b = document.createElement("button");
+        b.innerText = "okay 😳";
+        b.onclick = () => {
+            slide++;
+            showSlide();
+        };
+        b.classList.add("fadeIn");  // Fade effect when transitioning to harder questions
+        c.appendChild(b);
+        return;
+    }
+
+    if (s.textbox) {
+        const input = document.createElement("input");
+        const b = document.createElement("button");
+        b.innerText = "Submit";
+        b.onclick = () => {
+            if (normalize(input.value) === normalize("im so cute")) {
+                alert("please dont ever forget that.");
+                slide++;
+                showSlide();
+            } else {
+                wrongAnswer();
+            }
+        };
+        c.appendChild(input);
+        c.appendChild(b);
+        return;
+    }
+
+    if (s.valentine) {
+        const yes = document.createElement("button");
+        yes.innerText = "YES 💖";
+        yes.onclick = showNewSong;
+        yes.classList.add("heartbeat");  // Heartbeat effect on "YES" button
+
+        const no = document.createElement("button");
+        no.innerText = "NO 😭";
+        no.onclick = sadReset;
+        c.appendChild(yes);
+        c.appendChild(no);
+        return;
+    }
+
+    const good = document.createElement("button");
+    good.innerText = s.good;
+    good.onclick = () => {
+        slide++;
+        showSlide();
+    };
+
+    const bad = document.createElement("button");
+    bad.innerText = s.bad;
+    bad.onclick = wrongAnswer;
+
+    if (Math.random() < 0.5) {
+        c.appendChild(good);
+        c.appendChild(bad);
+    } else {
+        c.appendChild(bad);
+        c.appendChild(good);
+    }
+}
+
+function wrongAnswer() {
+    lives--;
+    if (lives <= 0) {
+        alert("wrong answer 😭 try again");
+        resetGame();
+    }
+    showSlide();
+}
+
+function sadReset() {
+    clearImages();
+    document.getElementById("container").innerHTML =
+        "<h1>:(</h1><button onclick='resetGame()'>Try again</button>";
+    
+    // Play sad music and stop the background music
+    document.getElementById("sadSound").play();  // Play sad sound
+    document.getElementById("music").pause();    // Pause background music
+}
+
+
+
+
+function resetGame() {
+    lives = 5;
+    slide = 0;
+    firstImageSrc = ''; // Reset first image tracker
+    clearImages();
+    showSlide();
+
+    // Stop sad music and play background music again
+    document.getElementById("sadSound").pause();  // Stop sad sound
+    document.getElementById("sadSound").currentTime = 0;  // Reset the sad sound to the beginning
+    document.getElementById("music").play();      // Play background music again
+}
+
+
+
+
+
+function showNewSong() {
+    // Stop the current background music
+    document.getElementById("music").pause();
+    
+    // Play new song
+    document.getElementById("newSong").play();
+
+    // Show the gift
+    showGift();
+}
+
+function showGift() {
+    clearImages();
+    const c = document.getElementById("container");
+    c.innerHTML =
+        "<h1>Thank you 🥹 you made me very happy!</h1><h2>You won a free gift, arriving soon! Here is a song to listen to while you wait!</h2><h3>These are pop tarts btw, not inside of a bacteria. :((<h3><h4>And this does not count for your actual valentines gift, anyway. byee.<h5>Sorry I keep trying to think of something cool to say. Sometimes ur mind just can't form any words when staring at an immaculate sunset.<h5><h6>Heh I almost compared staring at you with staring at an 'immaculate sunset'. Silly me. LOL<h6><h7>There's just nothing in this world that exists that I can compare your ethereal beauty with <3 ... how's that for cringe until I build a bridge to your heart?<h7>";
+    const img = document.createElement("img");
+    img.src = "pop.jpg";
+    img.style.width = "200px";
+    img.style.marginTop = "20px";
+    c.appendChild(img);
+}
+
+showSlide();
+</script>
+
+</body>
+</html>
