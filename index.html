@@ -74,8 +74,10 @@ button {
 <div id="container"></div>
 
 <audio id="music" src="Hello Kitty.mp3" loop autoplay></audio>
-<audio id="sadSound" src="sad.mp3"></audio>
+<audio id="sadSound" src="creep.webm"></audio>
 <audio id="newSong" src="yebit.mp3"></audio>
+<audio id="enterSound" src="banditnoise.wav"></audio>
+
 
 <script>
 let slide = 0;
@@ -252,12 +254,20 @@ function createBouncingImage(src, clickable = false) {
         firstImageSrc = src;
     }
 
-    if (clickable) {
+    if (clickable || src === "img9.jpeg") {
+
         img.style.pointerEvents = "auto";
         img.style.cursor = "pointer";
-
+        
         img.onclick = () => {
-            const s = slides[slide]; // Get current slide data
+
+    // 👇 ADD THIS PART
+    if (src === "img9.jpeg") {
+        forceRestartPage();
+        return;
+    }
+
+    const s = slides[slide];
 
             // Check if the clicked image is in the correctAnswers array
             if (s.correctAnswers.includes(src)) {
@@ -301,8 +311,40 @@ function spawnImages(count, clickable = false) {
 function normalize(s) {
     return s.toLowerCase().replace(/[^a-z]/g, "");
 }
+function forceRestartPage() {
+    // Lose all hearts instantly
 
-/* ---------------- SLIDE LOGIC ---------------- */
+document.getElementById("enterSound").play();
+
+    clearImages();
+
+    const c = document.getElementById("container");
+    c.innerHTML = "";
+
+    // Stop all music
+    document.getElementById("music").pause();
+    document.getElementById("newSong").pause();
+    document.getElementById("sadSound").pause();
+
+    // Custom text
+    const h = document.createElement("h1");
+    h.innerText = "All your hearts got stolen by a Bandit!";
+    c.appendChild(h);
+
+    // Custom image (CHANGE THIS to whatever image you want)
+    const img = document.createElement("img");
+    img.src = "img10.jpeg";  // <-- change this
+    img.style.width = "250px";
+    img.style.marginTop = "20px";
+    c.appendChild(img);
+
+    // Restart button
+    const b = document.createElement("button");
+    b.innerText = "Restart";
+    b.onclick = resetGame;
+    c.appendChild(b);
+}
+
 function showSlide() {
     const c = document.getElementById("container");
     c.innerHTML = "";
